@@ -96,6 +96,18 @@ unittest
     assert(BCtor.callTip == "this(bool b)");
 }
 
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
+    writeln("Running union constructor tests...");
+	auto source = q{ union A {int a; bool b;} };
+	auto pair = generateAutocompleteTrees(source, cache);
+	auto A = pair.symbol.getFirstPartNamed(internString("A"));
+    auto ACtor = A.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
+    assert(ACtor.callTip == "this(int a, bool b)");
+}
+
 static StringCache stringCache = void;
 static this()
 {
