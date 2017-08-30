@@ -30,8 +30,7 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
     scope(exit) pair.destroy();
 
     size_t i;
-    foreach (const(CacheEntry)* s; mcache.getAllSymbols)
-        foreach(ss; (*s.symbol)[])
+    foreach(ss; (*pair.symbol)[])
     {
         if (ss.type)
         {
@@ -73,6 +72,38 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
     q{byte[int][] b;}.expectSymbolsAndTypes([["b", "*arr*", "*aa*"]]);
     q{int*[]*[char] b;}.expectSymbolsAndTypes([["b", "*aa*", "*", "*arr*", "*"]]);
     q{void* function()[] b;}.expectSymbolsAndTypes([["b", "*arr*", "function", "*", "void"]]);
+}
+
+static StringCache stringCache = void;
+static this()
+{
+    stringCache = StringCache(StringCache.defaultBucketCount);
+}
+
+const(Token)[] lex(string source)
+{
+    return lex(source, null);
+}
+
+const(Token)[] lex(string source, string filename)
+{
+    import dparse.lexer : getTokensForParser;
+    import std.string : representation;
+    LexerConfig config;
+    config.fileName = filename;
+    return getTokensForParser(source.dup.representation, config, &stringCache);
+}
+
+unittest
+{
+    auto tokens = lex(q{int a = 9;});
+    foreach(i, t;
+        cast(IdType[]) [tok!"int", tok!"identifier", tok!"=", tok!"intLiteral", tok!";"])
+    {
+        assert(tokens[i] == t);
+    }
+    assert(tokens[1].text == "a", tokens[1].text);
+    assert(tokens[3].text == "9", tokens[3].text);
 }
 
 static StringCache stringCache = void;
