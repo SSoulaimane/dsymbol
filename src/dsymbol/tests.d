@@ -19,15 +19,22 @@ import std.typecons : scoped;
  *      followed by the type strings.
  */
 version (unittest):
-void expectSymbolsAndTypes(const string source, const string[][] results,
+void expectSymbolsAndTypes(string source, const(string[])[] results,
     string file = __FILE_FULL_PATH__, size_t line = __LINE__)
 {
     import core.exception : AssertError;
     import std.exception : enforce;
+    import std.algorithm : schwartzSort;
+    import std.range : array;
 
     ModuleCache mcache = ModuleCache(theAllocator);
     auto pair = generateAutocompleteTrees(source, mcache);
     scope(exit) pair.destroy();
+
+    results = results
+        .dup
+        .schwartzSort!(a => internString(a[0]).ptr)
+        .array;
 
     size_t i;
     foreach(ss; (*pair.symbol)[])
