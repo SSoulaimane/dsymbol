@@ -4,7 +4,7 @@ import std.experimental.allocator;
 import dparse.ast, dparse.parser, dparse.lexer, dparse.rollback_allocator;
 import dsymbol.cache_entry, dsymbol.modulecache, dsymbol.symbol;
 import dsymbol.conversion, dsymbol.conversion.first, dsymbol.conversion.second;
-import dsymbol.semantic, dsymbol.string_interning;
+import dsymbol.semantic, dsymbol.string_interning, dsymbol.builtin.names;
 import std.file, std.path, std.format;
 import std.stdio : writeln, stdout;
 import std.typecons : scoped;
@@ -81,36 +81,19 @@ void expectSymbolsAndTypes(string source, const(string[])[] results,
     q{void* function()[] b;}.expectSymbolsAndTypes([["b", "*arr*", "function", "*", "void"]]);
 }
 
-static StringCache stringCache = void;
-static this()
-{
-    stringCache = StringCache(StringCache.defaultBucketCount);
-}
-
-const(Token)[] lex(string source)
-{
-    return lex(source, null);
-}
-
-const(Token)[] lex(string source, string filename)
-{
-    import dparse.lexer : getTokensForParser;
-    import std.string : representation;
-    LexerConfig config;
-    config.fileName = filename;
-    return getTokensForParser(source.dup.representation, config, &stringCache);
-}
-
 unittest
 {
-    auto tokens = lex(q{int a = 9;});
-    foreach(i, t;
-        cast(IdType[]) [tok!"int", tok!"identifier", tok!"=", tok!"intLiteral", tok!";"])
-    {
-        assert(tokens[i] == t);
-    }
-    assert(tokens[1].text == "a", tokens[1].text);
-    assert(tokens[3].text == "9", tokens[3].text);
+	ModuleCache cache = ModuleCache(theAllocator);
+
+    writeln("Running struct constructor tests...");
+	auto source = q{ struct A {int a; struct B {bool b;} int c;} };
+	auto pair = generateAutocompleteTrees(source, cache);
+	auto A = pair.symbol.getFirstPartNamed(internString("A"));
+	auto B = A.getFirstPartNamed(internString("B"));
+    auto ACtor = A.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
+    auto BCtor = B.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
+    assert(ACtor.callTip == "this(int a, int c)");
+    assert(BCtor.callTip == "this(bool b)");
 }
 
 static StringCache stringCache = void;
