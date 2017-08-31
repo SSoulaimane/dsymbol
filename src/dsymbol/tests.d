@@ -137,6 +137,25 @@ unittest
     assert(Af is pair.scope_.getFirstSymbolByNameAndCursor(internString("f"), var.location));
 }
 
+unittest
+{
+    ModuleCache cache = ModuleCache(theAllocator);
+
+    writeln("Running non-importable symbols tests...");
+    auto source = q{
+        class A { this(int a){} }
+        class B : A {}
+        class C { A f; alias f this; }
+    };
+    auto pair = generateAutocompleteTrees(source, cache);
+    auto A = pair.symbol.getFirstPartNamed(internString("A"));
+    auto B = pair.symbol.getFirstPartNamed(internString("B"));
+    auto C = pair.symbol.getFirstPartNamed(internString("C"));
+    assert(A.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) !is null);
+    assert(B.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) is null);
+    assert(C.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) is null);
+}
+
 static StringCache stringCache = void;
 static this()
 {
