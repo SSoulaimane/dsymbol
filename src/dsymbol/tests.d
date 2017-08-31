@@ -4,7 +4,7 @@ import std.experimental.allocator;
 import dparse.ast, dparse.parser, dparse.lexer, dparse.rollback_allocator;
 import dsymbol.cache_entry, dsymbol.modulecache, dsymbol.symbol;
 import dsymbol.conversion, dsymbol.conversion.first, dsymbol.conversion.second;
-import dsymbol.semantic, dsymbol.string_interning;
+import dsymbol.semantic, dsymbol.string_interning, dsymbol.builtin.names;
 import std.file, std.path, std.format;
 import std.stdio : writeln, stdout;
 import std.typecons : scoped;
@@ -75,6 +75,24 @@ void expectSymbolsAndTypes(string source, const(string[])[] results,
     q{auto b = [[[0]]];}.expectSymbolsAndTypes([["b", "*arr*", "*arr*", "*arr*", "int"]]);
     //q{int* b;}.expectSymbolsAndTypes([["b", "*", "int"]]);
     //q{int*[] b;}.expectSymbolsAndTypes([["b", "*arr*", "*", "int"]]);
+}
+
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
+    writeln("Running `super` tests...");
+	auto source = q{ class A {} class B : A {} };
+	auto pair = generateAutocompleteTrees(source, cache);
+	assert(pair.symbol);
+	auto A = pair.symbol.getFirstPartNamed(internString("A"));
+	auto B = pair.symbol.getFirstPartNamed(internString("B"));
+	auto scopeA = (pair.scope_.getScopeByCursor(A.location + A.name.length));
+	auto scopeB = (pair.scope_.getScopeByCursor(B.location + B.name.length));
+	assert(scopeA !is scopeB);
+
+	assert(!scopeA.getSymbolsByName(SUPER_SYMBOL_NAME).length);
+	assert(scopeB.getSymbolsByName(SUPER_SYMBOL_NAME)[0].type is A);
 }
 
 static StringCache stringCache = void;
