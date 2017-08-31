@@ -95,6 +95,21 @@ unittest
 	assert(scopeB.getSymbolsByName(SUPER_SYMBOL_NAME)[0].type is A);
 }
 
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
+    writeln("Running struct constructor tests...");
+	auto source = q{ struct A {int a; struct B {bool b;} int c;} };
+	auto pair = generateAutocompleteTrees(source, cache);
+	auto A = pair.symbol.getFirstPartNamed(internString("A"));
+	auto B = A.getFirstPartNamed(internString("B"));
+    auto ACtor = A.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
+    auto BCtor = B.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
+    assert(ACtor.callTip == "this(int a, int c)");
+    assert(BCtor.callTip == "this(bool b)");
+}
+
 static StringCache stringCache = void;
 static this()
 {
