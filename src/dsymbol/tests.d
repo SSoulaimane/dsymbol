@@ -85,6 +85,24 @@ unittest
 {
 	ModuleCache cache = ModuleCache(theAllocator);
 
+    writeln("Running `super` tests...");
+	auto source = q{ class A {} class B : A {} };
+	auto pair = generateAutocompleteTrees(source, cache);
+	assert(pair.symbol);
+	auto A = pair.symbol.getFirstPartNamed(internString("A"));
+	auto B = pair.symbol.getFirstPartNamed(internString("B"));
+	auto scopeA = (pair.scope_.getScopeByCursor(A.location + A.name.length));
+	auto scopeB = (pair.scope_.getScopeByCursor(B.location + B.name.length));
+	assert(scopeA !is scopeB);
+
+	assert(!scopeA.getSymbolsByName(SUPER_SYMBOL_NAME).length);
+	assert(scopeB.getSymbolsByName(SUPER_SYMBOL_NAME)[0].type is A);
+}
+
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
     writeln("Running struct constructor tests...");
 	auto source = q{ struct A {int a; struct B {bool b;} int c;} };
 	auto pair = generateAutocompleteTrees(source, cache);
@@ -125,25 +143,7 @@ unittest
 
 unittest
 {
-	ModuleCache cache = ModuleCache(theAllocator);
-
-    writeln("Running `super` tests...");
-	auto source = q{ class A {} class B : A {} };
-	auto pair = generateAutocompleteTrees(source, cache);
-	assert(pair.symbol);
-	auto A = pair.symbol.getFirstPartNamed(internString("A"));
-	auto B = pair.symbol.getFirstPartNamed(internString("B"));
-	auto scopeA = (pair.scope_.getScopeByCursor(A.location + A.name.length));
-	auto scopeB = (pair.scope_.getScopeByCursor(B.location + B.name.length));
-	assert(scopeA !is scopeB);
-
-	assert(!scopeA.getSymbolsByName(SUPER_SYMBOL_NAME).length);
-	assert(scopeB.getSymbolsByName(SUPER_SYMBOL_NAME)[0].type is A);
-}
-
-unittest
-{
-	ModuleCache cache = ModuleCache(theAllocator);
+    ModuleCache cache = ModuleCache(theAllocator);
 
     writeln("Running non-importable symbols tests...");
     auto source = q{
