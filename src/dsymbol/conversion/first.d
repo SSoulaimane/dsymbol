@@ -848,10 +848,13 @@ private:
 		{
 			foreach (const TemplateParameter p; templateParameters.templateParameterList.items)
 			{
+				import dparse.rollback_allocator : RollbackAllocator;
+
 				string name;
 				CompletionKind kind;
 				size_t index;
 				Rebindable!(const(Type)) type;
+				RollbackAllocator rba;
 				if (p.templateAliasParameter !is null)
 				{
 					name = p.templateAliasParameter.identifier.text;
@@ -871,8 +874,25 @@ private:
 					index = p.templateValueParameter.identifier.index;
 					type = p.templateValueParameter.type;
 				}
+				else if (p.templateTupleParameter !is null)
+				{
+					name = p.templateTupleParameter.identifier.text;
+					kind = CompletionKind.aliasName;
+					index = p.templateTupleParameter.identifier.index;
+				}
+				else if (p.templateThisParameter !is null)
+				{
+					assert(p.templateThisParameter.templateTypeParameter !is null);
+					name = p.templateThisParameter.templateTypeParameter.identifier.text;
+					kind = CompletionKind.variableName;
+					index = p.templateThisParameter.templateTypeParameter.identifier.index;
+					Type _type = rba.make!Type();
+					_type.type2 = rba.make!Type2();
+					_type.type2.superOrThis = tok!"this";
+					type = _type;
+				}
 				else
-					continue;
+					assert(0);
 				SemanticSymbol* templateParameter = allocateSemanticSymbol(name,
 					kind, symbolFile, index);
 				if (type !is null)
