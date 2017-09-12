@@ -1225,8 +1225,8 @@ class InitializerVisitor : ASTVisitor
 
 	override void visit(const IndexExpression index)
 	{
+		index.unaryExpression.accept(this);
 		lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME);
-		index.accept(this);
 	}
 
 	override void visit(const Initializer initializer)
