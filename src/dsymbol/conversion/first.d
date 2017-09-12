@@ -814,6 +814,8 @@ private:
 					p.name.index);
 				if (p.type !is null)
 					addTypeToLookups(parameter.typeLookups, p.type);
+				if (p.vararg)
+					parameter.acSymbol.isVariadic = true;
 				parameter.parent = currentSymbol;
 				currentSymbol.acSymbol.argNames.insert(parameter.acSymbol.name);
 				currentSymbol.addChild(parameter, true);
@@ -821,6 +823,7 @@ private:
 			}
 			if (parameters.hasVarargs)
 			{
+				currentSymbol.acSymbol.isVariadic = true;
 				SemanticSymbol* argptr = allocateSemanticSymbol(ARGPTR_SYMBOL_NAME,
 					CompletionKind.variableName, istring(null), size_t.max);
 				addTypeToLookups(argptr.typeLookups, argptrType);
