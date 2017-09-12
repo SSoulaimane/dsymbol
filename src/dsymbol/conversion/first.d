@@ -879,6 +879,7 @@ private:
 					addTypeToLookups(templateParameter.typeLookups, type);
 				templateParameter.parent = symbol;
 				symbol.addChild(templateParameter, true);
+				currentScope.addSymbol(templateParameter.acSymbol, false);
 			}
 		}
 	}
