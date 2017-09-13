@@ -151,6 +151,9 @@ final class FirstPass : ASTVisitor
 		}
 		else
 		{
+			pushParametersScope(dec.parameters, dec.templateParameters,
+					dec.name.index + dec.name.text.length);
+			scope (exit) popScope();
 			immutable ips = includeParameterSymbols;
 			includeParameterSymbols = false;
 			processParameters(currentSymbol, dec.returnType,
@@ -700,6 +703,80 @@ private:
 		currentScope = s;
 	}
 
+	/**
+	 * Push a pseudo scope for holding function or template
+	 * parameters/arguments when there is no real scope
+	 * (ex: no function body).
+	 */
+	void pushParametersScope(const Parameters params,
+		const TemplateParameters templateParams, size_t scopeBegin)
+	{
+		size_t scopeEnd = scopeBegin;
+		// make sure the scope encloses all the parameters types
+		//  for resolution of template type arguments to work
+		if (params !is null && params.parameters.length)
+		{
+			Token lastTok;
+			foreach_reverse (lastParam; params.parameters)
+			{
+				if (lastParam.name !is Token.init)
+				{
+					lastTok = lastParam.name;
+					break;
+				}
+				else if (lastParam.type !is null)
+				{
+					// too many paths for a simple loop, use visitor instead
+					class LastTokenVisitor : ASTVisitor
+					{
+						Token lastToken;
+						alias visit = ASTVisitor.visit;
+						override void visit(const Token lastTok)
+						{
+							if (lastTok > lastToken)
+								lastToken = lastTok;
+						}
+					}
+					auto visitor = scoped!LastTokenVisitor();
+					lastParam.type.accept(visitor);
+					if (visitor.lastToken !is Token.init)
+					{
+						lastTok = visitor.lastToken;
+						break;
+					}
+				}
+			}
+			if (lastTok !is Token.init)
+				scopeEnd = lastTok.index + lastTok.text.length;
+		}
+		else if (templateParams !is null
+				&& templateParams.templateParameterList !is null
+				&& templateParams.templateParameterList.items.length)
+		{
+			auto lastParam = templateParams.templateParameterList.items[$ - 1];
+			foreach (p; tuple(
+					lastParam.templateTypeParameter,
+					lastParam.templateValueParameter,
+					lastParam.templateAliasParameter,
+					lastParam.templateTupleParameter,
+					lastParam.templateThisParameter
+						? lastParam.templateThisParameter.templateTypeParameter
+						: null,
+					))
+			{
+				if (p !is null)
+				{
+					assert(p.identifier !is Token.init);
+					scopeEnd = p.identifier.index + p.identifier.text.length;
+					break;
+				}
+			}
+			assert(scopeEnd > scopeBegin);
+		}
+		assert(scopeEnd >= scopeBegin);
+		pushScope(scopeBegin, scopeEnd);
+	}
+
 	void pushSymbol(string name, CompletionKind kind, istring symbolFile,
 		size_t location = 0, const Type type = null)
 	{
@@ -771,14 +848,21 @@ private:
 		scope(exit) currentSymbol = currentSymbol.parent;
 		symbol.protection = protection.current;
 		symbol.acSymbol.doc = internString(doc);
+
 		if (functionBody !is null)
 		{
 			pushFunctionScope(functionBody, semanticAllocator,
 				location + 4); // 4 == "this".length
 			scope(exit) popScope();
-			currentSymbol = symbol;
+			processParameters(symbol, null, THIS_SYMBOL_NAME, parameters, templateParameters);
 			functionBody.accept(this);
-			currentSymbol = currentSymbol.parent;
+		}
+		else
+		{
+			pushParametersScope(parameters, templateParameters,
+					location + 4);	// 4 == "this".length
+			scope (exit) popScope();
+			processParameters(symbol, null, THIS_SYMBOL_NAME, parameters, templateParameters);
 		}
 	}
 
