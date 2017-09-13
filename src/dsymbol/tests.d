@@ -18,7 +18,6 @@ import std.typecons : scoped;
  *      results = An array of string array. Each slot represents the variable name
  *      followed by the type strings.
  */
-version (unittest):
 void expectSymbolsAndTypes(string source, const(string[])[] results,
     string file = __FILE_FULL_PATH__, size_t line = __LINE__)
 {
