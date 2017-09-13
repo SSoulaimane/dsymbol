@@ -123,6 +123,12 @@ enum SymbolQualifier : ubyte
 	func,
 	/// Selective import
 	selectiveImport,
+	/// base class or interface symbol
+	inherit,
+	/// alias this symbol
+	aliasThis,
+	/// mixin template symbol
+	mixinTemplate,
 }
 
 /**
