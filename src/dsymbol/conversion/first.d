@@ -806,7 +806,7 @@ private:
 		const TemplateParameters templateParameters)
 	{
 		processTemplateParameters(symbol, templateParameters);
-		if (includeParameterSymbols && parameters !is null)
+		if (parameters !is null)
 		{
 			foreach (const Parameter p; parameters.parameters)
 			{
@@ -847,8 +847,7 @@ private:
 
 	void processTemplateParameters(SemanticSymbol* symbol, const TemplateParameters templateParameters)
 	{
-		if (includeParameterSymbols && templateParameters !is null
-				&& templateParameters.templateParameterList !is null)
+		if (templateParameters !is null	&& templateParameters.templateParameterList !is null)
 		{
 			foreach (const TemplateParameter p; templateParameters.templateParameterList.items)
 			{
