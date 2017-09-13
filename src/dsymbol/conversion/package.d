@@ -144,47 +144,13 @@ class SimpleParser : Parser
 		return null;
 	}
 
-	override FunctionBody parseFunctionBody()
+	override BlockStatement parseBlockStatement()
 	{
-		if (currentIs(tok!";"))
-			advance();
-		else if (currentIs(tok!"{"))
-			skipBraces();
-		else
-		{
-			if (currentIs(tok!"in"))
-			{
-				advance();
-				if (currentIs(tok!"{"))
-					skipBraces();
-				if (currentIs(tok!"out"))
-				{
-					advance();
-					if (currentIs(tok!"("))
-						skipParens();
-					if (currentIs(tok!"{"))
-						skipBraces();
-				}
-			}
-			else if (currentIs(tok!"out"))
-			{
-				advance();
-				if (currentIs(tok!"("))
-					skipParens();
-				if (currentIs(tok!"{"))
-					skipBraces();
-				if (currentIs(tok!"in"))
-				{
-					advance();
-					if (currentIs(tok!"{"))
-						skipBraces();
-				}
-			}
-			expect(tok!"body");
-			if (currentIs(tok!"{"))
-				skipBraces();
-		}
-		return allocator.make!FunctionBody();
+		BlockStatement bs = allocator.make!(BlockStatement);
+		bs.startLocation = current.index;
+		skipBraces();
+		bs.endLocation = tokens[index - 1].index;
+		return bs;
 	}
 }
 
