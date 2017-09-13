@@ -767,7 +767,8 @@ private:
 			CompletionKind.functionName, symbolFile, location);
 		symbol.parent = currentSymbol;
 		currentSymbol.addChild(symbol, true);
-		processParameters(symbol, null, THIS_SYMBOL_NAME, parameters, templateParameters);
+		currentSymbol = symbol;
+		scope(exit) currentSymbol = currentSymbol.parent;
 		symbol.protection = protection.current;
 		symbol.acSymbol.doc = internString(doc);
 		if (functionBody !is null)
