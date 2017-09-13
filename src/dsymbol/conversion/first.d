@@ -644,32 +644,32 @@ private:
 
 	void createConstructor()
 	{
-		import std.array : appender;
-		import std.range : zip;
+		import dparse.rollback_allocator : RollbackAllocator;
+		import std.range : lockstep;
 
-		auto app = appender!(char[])();
-		app.put("this(");
-		bool first = true;
-		foreach (field; zip(structFieldTypes[], structFieldNames[]))
-		{
-			if (first)
-				first = false;
-			else
-				app.put(", ");
-			if (field[0] is null)
-				app.put("auto ");
-			else
-			{
-				app.formatNode(field[0]);
-				app.put(" ");
-			}
-			app.put(field[1]);
-		}
-		app.put(")");
 		SemanticSymbol* symbol = allocateSemanticSymbol(CONSTRUCTOR_SYMBOL_NAME,
 			CompletionKind.functionName, symbolFile, currentSymbol.acSymbol.location);
-		symbol.acSymbol.callTip = internString(cast(string) app.data);
+		symbol.parent = currentSymbol;
 		currentSymbol.addChild(symbol, true);
+		currentSymbol = symbol;
+		scope(exit) currentSymbol = currentSymbol.parent;
+
+		RollbackAllocator rba;
+		Parameters params = rba.make!Parameters();
+		params.parameters = makeArray!(Parameter)(rba, structFieldTypes.length);
+		foreach (i, fieldType, fieldName; lockstep(structFieldTypes[], structFieldNames[]))
+		{
+			auto param = rba.make!Parameter();
+			param.type = fieldType;
+			param.name = Token(tok!"identifier");
+			param.name.text = fieldName;
+			params.parameters[i] = param;
+		}
+		size_t startLocation, endLocation;
+		startLocation = endLocation = currentScope.startLocation;
+		pushScope(startLocation, endLocation);	// pseudo scope for processParameters()
+		scope(exit) popScope();
+		processParameters(symbol, null, THIS_SYMBOL_NAME, params, null);
 	}
 
 	void pushScope(size_t startLocation, size_t endLocation)
