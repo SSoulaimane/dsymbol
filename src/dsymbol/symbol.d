@@ -129,6 +129,10 @@ enum SymbolQualifier : ubyte
 	aliasThis,
 	/// mixin template symbol
 	mixinTemplate,
+	/// function or delegate argument
+	functionArgument,
+	/// template argument
+	templateArgument,
 }
 
 /**

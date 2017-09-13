@@ -905,6 +905,7 @@ private:
 				currentSymbol.acSymbol.argNames.insert(parameter.acSymbol.name);
 				currentSymbol.addChild(parameter, true);
 				currentScope.addSymbol(parameter.acSymbol, false);
+				parameter.acSymbol.qualifier = SymbolQualifier.functionArgument;
 			}
 			if (parameters.hasVarargs)
 			{
@@ -987,6 +988,7 @@ private:
 				templateParameter.parent = symbol;
 				symbol.addChild(templateParameter, true);
 				currentScope.addSymbol(templateParameter.acSymbol, false);
+				templateParameter.acSymbol.qualifier = SymbolQualifier.templateArgument;
 			}
 		}
 	}
